@@ -113,3 +113,22 @@ def gerar_mapa(largura,altura):
     #imprimir_mapa_texto_com_grade_e_cores(mapa, MAPA_LARGURA, MAPA_ALTURA, LARGURA_CELULA)
 #-----------------------------------------------------------------------------------------------------------------------------------------
     #Gerar Montanha ^
+
+   #Gerar Cachoeira e Caverna v
+#-----------------------------------------------------------------------------------------------------------------------------------------
+    bordas = []
+    for x,y in montanhas_totais:
+        for vx,vy in get_vizinhos((x,y),largura,altura):
+            if mapa[(vx,vy)] is None:
+                bordas.append((vx,vy))
+    
+    pos_cachoeira = random.choice(bordas)
+    bordas.remove(pos_cachoeira)
+
+    pos_caverna = random.choice(bordas)
+
+    mapa[pos_cachoeira] = Terreno(pos_cachoeira, "Cachoeira")
+    mapa[pos_caverna] = Terreno(pos_caverna, "Caverna")
+    #imprimir_mapa_texto_com_grade_e_cores(mapa, MAPA_LARGURA, MAPA_ALTURA, LARGURA_CELULA)
+#-----------------------------------------------------------------------------------------------------------------------------------------
+    #Gerar Cachoeira e Caverna ^
