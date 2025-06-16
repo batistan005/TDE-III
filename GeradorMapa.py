@@ -90,3 +90,26 @@ def gerar_mapa(largura,altura):
     for y in range(altura):
         for x in range(largura):
             mapa[(x,y)] = None
+
+   #Gerar Montanha v
+#-----------------------------------------------------------------------------------------------------------------------------------------
+    montanha_y = (random.randint(0,1)) * (altura - 1)
+    montanha_x = (random.randint(0,1)) * (largura - 1)
+    mapa[(montanha_x,montanha_y)] = Terreno((montanha_x,montanha_y), "Montanha")
+
+    montanhas_totais = [(montanha_x, montanha_y)]
+    num_montanhas = random.randint(6,9)
+
+    while num_montanhas > len(montanhas_totais):
+        base_montanha = random.choice(montanhas_totais)
+        novas_montanhas = get_vizinhos(base_montanha, largura, altura)
+
+        for x,y in novas_montanhas:
+            if mapa[(x,y)] == None:
+                mapa[(x,y)] = Terreno((x,y), "Montanha")
+                montanhas_totais.append((x,y))
+                #imprimir_mapa_texto_com_grade_e_cores(mapa, MAPA_LARGURA, MAPA_ALTURA, LARGURA_CELULA)
+                break
+    #imprimir_mapa_texto_com_grade_e_cores(mapa, MAPA_LARGURA, MAPA_ALTURA, LARGURA_CELULA)
+#-----------------------------------------------------------------------------------------------------------------------------------------
+    #Gerar Montanha ^
