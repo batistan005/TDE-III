@@ -215,3 +215,28 @@ def gerar_mapa(largura,altura):
     #imprimir_mapa_texto_com_grade_e_cores(mapa, MAPA_LARGURA, MAPA_ALTURA, LARGURA_CELULA)
 #-----------------------------------------------------------------------------------------------------------------------------------------
     #Gerar Planicie ^
+
+    # Gerar Floresta v
+#-----------------------------------------------------------------------------------------------------------------------------------------
+    for y in range(altura):
+        for x in range(largura):
+            if mapa[(x,y)] == None:
+                mapa[(x,y)] = Terreno((x,y), "Floresta")
+    #imprimir_mapa_texto_com_grade_e_cores(mapa, MAPA_LARGURA, MAPA_ALTURA, LARGURA_CELULA)
+#-----------------------------------------------------------------------------------------------------------------------------------------
+    #Gerar Floresta ^
+
+    #Gerar Saida v
+#-----------------------------------------------------------------------------------------------------------------------------------------
+    while True:
+        x = random.randint(0,8)
+        y = random.randint(0,8)
+        if mapa[(x,y)] not in ("Rio","Cachoeira","Caverna"):
+                mapa[(x,y)].saida = True
+                saida_pos = (x,y)
+                break
+    #imprimir_mapa_texto_com_grade_e_cores(mapa, MAPA_LARGURA, MAPA_ALTURA, LARGURA_CELULA)   
+#-----------------------------------------------------------------------------------------------------------------------------------------
+    #Gerar Saida ^
+
+    return mapa, saida_pos
