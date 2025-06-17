@@ -240,3 +240,35 @@ def gerar_mapa(largura,altura):
     #Gerar Saida ^
 
     return mapa, saida_pos
+
+def imprimir_mapa_texto_com_grade_e_cores(mapa, largura, altura, largura_celula):
+    console.print("\n--- Mapa Pré-Gerado ---", style="bold blue")
+
+    # Cabeçalho das colunas (X)
+    y_label_width = len(str(altura - 1)) 
+    linha_cabecalho_partes = [" " * (y_label_width + 1)] 
+    for i in range(largura):
+        linha_cabecalho_partes.append(f"{i:^{largura_celula}}")
+    console.print("".join(linha_cabecalho_partes), style="bold yellow")
+
+    # Linha horizontal superior
+    console.print(" " * (y_label_width + 1) + "+" + ("-" * largura_celula + "+") * largura, style="dim")
+
+    for y in range(altura):
+        # Linha dos números Y e conteúdos das células
+        linha_conteudo_partes = [Text(f"{y:<{y_label_width}}", style="dim"), Text("|", style="dim")] 
+        for x in range(largura):
+            posicao = (x, y)
+            terreno = mapa.get(posicao)
+            if terreno:
+                texto_celula = Text(f"{terreno.get_abreviacao():^{largura_celula}}", style=terreno.get_cor())
+                linha_conteudo_partes.append(texto_celula)
+            else:
+                linha_conteudo_partes.append(Text(f"{'???':^{largura_celula}}", style="white")) 
+            linha_conteudo_partes.append(Text("|", style="dim"))
+        
+        console.print(*linha_conteudo_partes, sep="")
+
+        # Linha horizontal entre as células
+        console.print(" " * (y_label_width + 1) + "+" + ("-" * largura_celula + "+") * largura, style="dim")
+    console.print("-----------------------------------------\n", style="bold blue")
