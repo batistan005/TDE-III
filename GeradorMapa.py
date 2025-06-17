@@ -188,3 +188,30 @@ def gerar_mapa(largura,altura):
     #imprimir_mapa_texto_com_grade_e_cores(mapa, MAPA_LARGURA, MAPA_ALTURA, LARGURA_CELULA)
 #-----------------------------------------------------------------------------------------------------------------------------------------
     #Gerar Rio ^
+
+   #Gerar Planicie v
+#-----------------------------------------------------------------------------------------------------------------------------------------
+    while True:
+        planicie_y = (random.randint(0,8))
+        planicie_x = (random.randint(0,8))
+
+        if mapa[(planicie_x,planicie_y)] == None:
+            mapa[(planicie_x,planicie_y)] = Terreno((planicie_x,planicie_y), "Planície")
+            break
+        
+
+    planicies_totais = [(planicie_x, planicie_y)]
+    num_planicies = random.randint(9,14)
+
+    while num_planicies > len(planicies_totais):
+        base_planicie = random.choice(planicies_totais)
+        novas_planicies = get_vizinhos(base_planicie, largura, altura)
+
+        for x,y in novas_planicies:
+            if mapa[(x,y)] == None:
+                mapa[(x,y)] = Terreno((x,y), "Planície")
+                planicies_totais.append((x,y))
+                break
+    #imprimir_mapa_texto_com_grade_e_cores(mapa, MAPA_LARGURA, MAPA_ALTURA, LARGURA_CELULA)
+#-----------------------------------------------------------------------------------------------------------------------------------------
+    #Gerar Planicie ^
