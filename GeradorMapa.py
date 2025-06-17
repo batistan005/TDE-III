@@ -132,3 +132,59 @@ def gerar_mapa(largura,altura):
     #imprimir_mapa_texto_com_grade_e_cores(mapa, MAPA_LARGURA, MAPA_ALTURA, LARGURA_CELULA)
 #-----------------------------------------------------------------------------------------------------------------------------------------
     #Gerar Cachoeira e Caverna ^
+
+   #Gerar Rio v
+#-----------------------------------------------------------------------------------------------------------------------------------------
+    direcoes_rio = {}
+
+    for x, y in get_vizinhos(pos_cachoeira, largura, altura):
+        if mapa[(x, y)] is None:
+            dx = x - pos_cachoeira[0]
+            dy = y - pos_cachoeira[1]
+            direcoes_rio[(x, y)] = [0, (dx, dy)] 
+
+            nx, ny = x, y
+            while 0 <= nx < largura and 0 <= ny < altura and mapa[(nx, ny)] is None:
+                direcoes_rio[(x, y)][0] += 1
+                nx += dx
+                ny += dy
+
+    base_rio = max(direcoes_rio, key=direcoes_rio.get)
+    curva = random.randint(0,1)
+    direcao = direcoes_rio[base_rio][1]
+    num_rio = direcoes_rio[base_rio][0]
+    rios_totais = [base_rio]
+    mapa[base_rio] = Terreno(base_rio, "Rio")
+    min_rios = round(num_rio/2)
+
+    x, y = base_rio
+    dx, dy = direcao
+    print(dx,dy)
+    print(curva)
+
+    while len(rios_totais) < num_rio:
+        if len(rios_totais) >= min_rios:
+            if curva == 0:
+                oldx = dx
+                dx = dy
+                dy = oldx
+            elif curva == 1:
+                oldx = dx
+                dx = -dy
+                dy = -oldx
+            curva = 2
+        x += dx
+        y += dy
+        if not (0 <= x < largura and 0 <= y < altura):
+            break
+        elif curva == 2:
+            num_rio += 1
+        if mapa[(x, y)] is not None:
+            break
+        mapa[(x, y)] = Terreno((x, y), "Rio")
+        rios_totais.append((x, y))
+
+
+    #imprimir_mapa_texto_com_grade_e_cores(mapa, MAPA_LARGURA, MAPA_ALTURA, LARGURA_CELULA)
+#-----------------------------------------------------------------------------------------------------------------------------------------
+    #Gerar Rio ^
