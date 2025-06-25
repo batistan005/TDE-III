@@ -19,6 +19,32 @@ MAX_ATRIBUTOS = 100
 CUSTO_PA = {"Madeira": 5, "Pedra": 2}
 CUSTO_CABANA = {"Madeira": 50, "Pedra": 20} # Custo para construir uma cabana
 
+def salvar_resultado(player, partida, status, motivo=None):
+    """Grava (ou acrescenta) o resultado da partida em resultados.json."""
+    registro = {
+        "status": status,                    # "vitória" ou "derrota"
+        "dias_sobrevividos": partida.dia,
+        "motivo": motivo,                    # None quando vencer
+        "mochila": player.mochila.copy(),
+        "tem_cabana": player.tem_cabana
+    }
+
+    arquivo = "resultados.json"
+
+    # Se já existe, carrega lista; se não, começa vazia
+    try:
+        with open(arquivo, "r", encoding="utf-8") as f:
+            dados = json.load(f)
+            if not isinstance(dados, list):
+                dados = [dados]
+    except FileNotFoundError:
+        dados = []
+
+    # Adiciona novo registro e salva de volta
+    dados.append(registro)
+    with open(arquivo, "w", encoding="utf-8") as f:
+        json.dump(dados, f, ensure_ascii=False, indent=2)
+
 # --- Classes do Jogo ---
 
 class Jogador:
@@ -75,9 +101,9 @@ class Jogador:
             if valor > 0:
                 recursos_encontrados = True
                 print(f"  - {valor}x {recurso}")
-                self.mochila[recurso] = self.mochila.get(recurso, 0) + valor
                 if recurso not in ["Animais", "Água"]:
-                    self.terreno_atual.recursos[recurso] = 0
+                    self.mochila[recurso] = self.mochila.get(recurso, 0) + valor
+                self.terreno_atual.recursos[recurso] = 0
         
         if not recursos_encontrados:
             print("Você não encontrou nada de novo aqui.")
@@ -85,36 +111,30 @@ class Jogador:
         if self.terreno_atual.tipo == "Caverna" and not self.tem_mapa:
             self.tem_mapa = True
             self.mochila["Mapa"] = 1
-            self.jogo.mensagem = "Nas profundezas da caverna, você encontra um baú antigo. Dentro, um mapa!"
+            self.jogo.mensagem = "Nas profundezas da caverna, você encontra uma caixa estranha. Dentro, um mapa!"
         
         self.jogo.passar_horas(self.terreno_atual.tempo_travessia)
 
     def alimentar(self):
-        print("O que você quer comer?")
-        comidas = {i+1: item for i, item in enumerate(self.mochila.keys()) if item in ["Frutas", "Raízes", "Animais"]}
-        
-        if not comidas:
+        if not "Comida" in self.mochila.keys():
             print("Você não tem nada para comer.")
             time.sleep(1)
             return
-
-        for i, item in comidas.items():
-            print(f"[{i}] {item} ({self.mochila[item]})")
-        print(f"[{len(comidas)+1}] Voltar")
-        
-        escolha = self.jogo.verifica_escolha(1, len(comidas)+1)
-        
-        if escolha == len(comidas)+1:
-            return
-
-        item_escolhido = comidas[escolha]
-        self.mochila[item_escolhido] -= 1
-        self.fome = min(MAX_ATRIBUTOS, self.fome + 20)
-        self.jogo.mensagem = f"Você comeu {item_escolhido} e se sente um pouco melhor."
+        else:
+            quantidade = int(input("Quanto você quer comer?"))
+            if quantidade > self.mochila["Comida"]:
+                print("Você não tem comida o suficiente pra isso!")
+            elif quantidade < 1:
+                print("Valor inválido!")
+            else:
+                self.mochila["Comida"] -= quantidade
+                self.fome = min(MAX_ATRIBUTOS, self.fome + (3 * quantidade))
+                self.jogo.mensagem = f"Você comeu e se sente um pouco melhor."
         
         # Chance de passar mal
-        if random.randint(1,10) > 8:
-            self.vida -= 15
+        chance = random.randint(1,6) * round(quantidade / 10)
+        if chance > 6 :
+            self.vida -= (self.vida * 0.15)
             self.jogo.mensagem = f"A comida não lhe caiu bem! Você se sente enjoado e perdeu vida."
             time.sleep(1)
 
@@ -146,9 +166,9 @@ class Jogador:
         print("Quanto tempo quer descansar (1-8 horas)?")
         tempo_descanso = self.jogo.verifica_escolha(1, 8, "Você não pode descansar mais que 8 horas!")
         
-        if not self.tem_cabana and self.terreno_atual.tipo != "Caverna" and random.randint(1, 10) > 8:
+        if not self.tem_cabana and self.terreno_atual.tipo != "Caverna" and (random.randint(1, 10) * round(tempo_descanso / 10)) > 8:
             print("Um som te acorda! Você foi atacado por um animal enquanto dormia!")
-            self.vida -= random.randint(20, 30)
+            self.vida -= random.randint(30, 70)
             time.sleep(1)
             if self.vida <= 0:
                 self.jogo.game_over("Você não sobreviveu ao ataque...")
@@ -183,11 +203,15 @@ class Jogador:
         self.fome -= 10
         self.jogo.passar_horas(3)
         time.sleep(2)
-        print("Após algum esforço, sua pá atinge algo metálico. É uma escotilha!")
-        time.sleep(2)
-        print("Você abre a escotilha e encontra um portal brilhante. Sem hesitar, você pula.")
-        time.sleep(2)
-        self.jogo.vitoria()
+        if terreno_atual.saida == True:
+            print("Após algum esforço, sua pá atinge algo metálico. É uma escotilha!")
+            time.sleep(2)
+            print("Você abre a escotilha e encontra um portal brilhante. Sem hesitar, você pula.")
+            time.sleep(2)
+            self.jogo.vitoria()
+        else:
+            print("Você cava mas não encontra nada! Parabéns...")
+            return
 
     def abrir_mochila(self):
         print("\n--- Mochila ---")
@@ -214,7 +238,7 @@ class Jogador:
             time.sleep(1)
             self.energia = 0
             if self.terreno_atual.tipo == "Caverna" or self.tem_cabana:
-                print("A escuridão da caverna te protegeu enquanto você estava desacordado.")
+                print("Você desmaiou em um lugar seguro que te protegeu enquanto você estava desacordado.")
                 self.energia += 40
                 self.jogo.passar_horas(8)
             else:
@@ -224,11 +248,14 @@ class Jogador:
                     print("Por sorte, nada aconteceu. Você acorda se sentindo fraco.")
                     self.energia += 30
                     self.jogo.passar_horas(8)
+        elif self.energia <= 30:
+            print("\nCuidado sua energia está baixa!")
+            time.sleep(2)
         
         if self.fome <= 0:
             print("Você está morrendo de fome! Sua vida está diminuindo...")
-            self.vida -= 10
-            self.fome = 5
+            self.fome = 0
+            self.vida -= 15
         
         self.vida = min(MAX_ATRIBUTOS, self.vida)
         self.energia = min(MAX_ATRIBUTOS, self.energia)
@@ -255,7 +282,6 @@ class Partida:
                 break
     
     def hud(self):
-        os.system('cls' if os.name == 'nt' else 'clear')
         if self.mensagem:
             console.print(f"[italic yellow]{self.mensagem}[/italic yellow]\n")
             self.mensagem = ""
@@ -280,14 +306,10 @@ class Partida:
             '1': {'texto': 'Andar', 'acao': self.player.andar},
             '2': {'texto': 'Explorar Terreno', 'acao': self.player.explorar},
             '3': {'texto': 'Descansar', 'acao': self.player.descansar},
-            '4': {'texto': 'Abrir Mochila', 'acao': self.player.abrir_mochila}
+            '4': {'texto': 'Abrir Mochila', 'acao': self.player.abrir_mochila},
+            '5': {'texto': 'Comer','acao': self.player.alimentar}
         }
-        proximo_indice = 5
-
-        comidas = [item for item in self.player.mochila if item in ["Frutas", "Raízes", "Animais"] and self.player.mochila[item] > 0]
-        if comidas:
-            acoes[str(proximo_indice)] = {'texto': 'Alimentar-se', 'acao': self.player.alimentar}
-            proximo_indice += 1
+        proximo_indice = 6
 
         if not self.player.tem_cabana:
             madeira_necessaria = CUSTO_CABANA["Madeira"]
@@ -325,16 +347,58 @@ class Partida:
 
     def evento_aleatorio(self):
         eventos = [
-            "Uma chuva forte e repentina começa a cair. Você se sente revigorado, mas um pouco triste.",
-            "Você avista um cervo à distância. É um momento de paz na natureza selvagem.",
-            "Um barulho te assusta! Mas era apenas um esquilo correndo por uma árvore.",
-            "Você tropeça em uma raiz e cai. Por sorte, não se machucou, mas perdeu um pouco de energia.",
-            "Você encontra uma carcaça de animal. Um lembrete sombrio dos perigos desta floresta."
+            "Você escuta um som de disparo ao leste. Talvez seja melhor não ir pra lá por enquanto.",
+            "Você encontra um cogumelo selvagem.",
+            "Um barulho te assusta!.",
+            "Você tropeça em uma raiz e cai. Por sorte, não se machucou, mas perdeu um pouco de energia."
         ]
         evento_escolhido = random.choice(eventos)
         console.print(f"\n[italic cyan]{evento_escolhido}[/italic cyan]")
         if "tropeça" in evento_escolhido:
             self.player.energia -= 10
+
+        elif "cogumelo" in evento_escolhido:
+            console.print(f"\n[italic cyan][1] Sim[/italic cyan]")
+            console.print(f"[italic cyan][2] Não[/italic cyan]")
+            console.print(f"[italic cyan]Deseja come-lo? [/italic cyan]")
+            choice = int(input(f""))
+            while choice < 1 or choice > 2:
+                console.print(f"\n[italic cyan]Escolha invalida![/italic cyan]")
+                choice = int(input(f""))
+            if choice == 1 and random.randint(1,2) > 1:
+                print("Você não sente nada demais...")
+                time.sleep(2)
+                self.game_over("Morto por cogumelo venenoso!")
+            elif choice == 1:
+                print("Você recuperou todos os status ao máximo!")
+                self.player.energia = MAX_ATRIBUTOS
+                self.player.vida = MAX_ATRIBUTOS
+                self.player.fome = MAX_ATRIBUTOS
+            else:
+                print("Você apenas deixa a planta do jeito que encontrou!")
+            
+        elif "barulho" in evento_escolhido:
+            console.print(f"\n[italic cyan][1] Sim[/italic cyan]")
+            console.print(f"[italic cyan][2] Não[/italic cyan]")
+            console.print(f"[italic cyan]Deseja investigar o barulho?[/italic cyan]")
+            choice = int(input(f""))
+            while choice < 1 or choice > 2:
+                console.print(f"[italic cyan]Escolha invalida![/italic cyan]")
+                choice = int(input(f""))
+            if choice == 1:
+                console.print(f"[italic cyan]Era apenas um siri fazendo barra. Você fica feliz por ve-lo dedicado ao exercicio[/italic cyan]")
+                console.print(f"\n[italic cyan][1] Sim[/italic cyan]")
+                console.print(f"[italic cyan][2] Não[/italic cyan]")
+                console.print(f"[italic cyan]Assustar o siri?[/italic cyan]")
+                choice = int(input(""))
+                while choice < 1 or choice > 2:
+                    console.print(f"\n[italic cyan]Escolha invalida![/italic cyan]")
+                    choice = int(input(f""))
+                if choice == 1:
+                    self.game_over("Nunca assuste o siri...")
+                else:
+                   console.print(f"\n[italic cyan]Você apenas o deixa continuar a barra normal![/italic cyan]")
+
         time.sleep(2)
 
     def verifica_escolha(self, low, upper, display="Opção inválida."):
@@ -349,17 +413,21 @@ class Partida:
                 print("Por favor, insira um número válido.")
 
     def game_over(self, motivo):
-        os.system('cls' if os.name == 'nt' else 'clear')
+        os.system('cls')
         console.print("\n[bold red]VOCÊ PERDEU[/bold red]")
         console.print(motivo)
         console.print(f"Você sobreviveu por {self.dia} dia(s).")
+        salvar_resultado(self.player, self, status="derrota", motivo=motivo)
+        print("Arquivo JSON gerado!")
         sys.exit()
     
     def vitoria(self):
-        os.system('cls' if os.name == 'nt' else 'clear')
+        os.system('cls')
         console.print("\n[bold green]VOCÊ ESCAPOU![/bold green]")
         console.print("Você emerge em um lugar familiar, a floresta ficou para trás.")
         console.print(f"Você sobreviveu por {self.dia} dia(s) e encontrou o caminho de casa!")
+        salvar_resultado(self.player, self, status="vitória")
+        print("Arquivo JSON gerado!")
         sys.exit()
 
 # --- Loop Principal do Jogo ---
